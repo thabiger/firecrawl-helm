@@ -25,14 +25,39 @@ registry, ingress controller, or CNI. NetworkPolicy is available but opt-in.
 
 ## Install
 
-The chart creates its own Secret with generated credentials when
-`existingSecret` is empty. This is the quickest way to get started:
+Install from a checkout:
 
 ```bash
 helm upgrade --install firecrawl . \
   --namespace firecrawl \
   --create-namespace
 ```
+
+Or install the packaged chart from GitHub Releases:
+
+```bash
+helm upgrade --install firecrawl \
+  https://github.com/thabiger/firecrawl-helm/releases/download/v0.1.0/firecrawl-0.1.0.tgz \
+  --namespace firecrawl \
+  --create-namespace
+```
+
+The chart is also published as an OCI artifact. Private repositories require a
+registry login first:
+
+```bash
+echo "$GITHUB_TOKEN" | helm registry login ghcr.io -u YOUR_GITHUB_USER --password-stdin
+
+helm upgrade --install firecrawl \
+  oci://ghcr.io/thabiger/charts/firecrawl \
+  --version 0.1.0 \
+  --namespace firecrawl \
+  --create-namespace
+```
+
+The chart creates its own Secret with generated credentials when
+`existingSecret` is empty. This is the quickest way to get started. For a
+production deployment, create the Secret outside the chart as shown below.
 
 For a production deployment, create the Secret outside the chart and reference
 it. The Secret must contain these keys:
