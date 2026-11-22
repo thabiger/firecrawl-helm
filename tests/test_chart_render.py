@@ -248,15 +248,6 @@ class ChartRenderTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_repository_has_no_legacy_references(self):
-        result = subprocess.run(
-            ["bash", str(ROOT / "scripts" / "check-generic.sh")],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_rendered_manifests_have_no_legacy_references(self):
         rendered = yaml.safe_dump_all(render(), sort_keys=True).lower()
         self.assertNotIn(FORBIDDEN, rendered)

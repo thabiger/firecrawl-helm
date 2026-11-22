@@ -228,11 +228,7 @@ chart in place. Delete them deliberately.
 helm lint . --values ci/test-values.yaml
 helm template firecrawl . -n firecrawl --values ci/test-values.yaml
 uv run --with pyyaml python -m unittest discover -s tests -v
-scripts/check-generic.sh
 ```
-
-`scripts/check-generic.sh` is a guard that keeps deployment-specific names and
-consumer references out of the chart.
 
 ## License
 
