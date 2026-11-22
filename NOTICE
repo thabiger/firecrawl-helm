@@ -1,0 +1,11 @@
+This Helm chart deploys Firecrawl.
+
+Firecrawl source code:
+  https://github.com/firecrawl/firecrawl
+  License: AGPL-3.0
+
+The default container images referenced by this chart are published by the
+Firecrawl project. If you build, modify, or redistribute Firecrawl images, the
+AGPL-3.0 license applies to that software and its source-offer obligations.
+
+The Helm chart source in this repository is licensed separately under MIT.

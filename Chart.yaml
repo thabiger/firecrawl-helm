@@ -1,0 +1,16 @@
+apiVersion: v2
+name: firecrawl
+description: Self-hosted Firecrawl API, Playwright, SearXNG, Redis, RabbitMQ, and NuQ Postgres
+type: application
+version: 0.1.0
+appVersion: "2.11.162"
+kubeVersion: ">=1.27.0-0"
+home: https://github.com/firecrawl/firecrawl
+sources:
+  - https://github.com/firecrawl/firecrawl
+keywords:
+  - firecrawl
+  - crawling
+  - scraping
+  - playwright
+  - searxng

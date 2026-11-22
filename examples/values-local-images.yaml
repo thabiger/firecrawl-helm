@@ -1,0 +1,14 @@
+# Use images built locally by scripts/build-images.sh.
+images:
+  api:
+    repository: localhost/firecrawl-api
+    tag: "2.11.162"
+    digest: ""
+  playwright:
+    repository: localhost/firecrawl-playwright
+    tag: "2.11.162"
+    digest: ""
+  nuqPostgres:
+    repository: localhost/firecrawl-nuq-postgres
+    tag: "2.11.162"
+    digest: ""

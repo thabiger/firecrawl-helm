@@ -1,0 +1,19 @@
+# Opt in to NetworkPolicy and allow one client workload to reach the API.
+# This example assumes the client is in the namespace labeled "apps".
+networkPolicy:
+  enabled: true
+  egress:
+    allowDns: true
+    allowSameRelease: true
+    allowInternet: true
+    denyPrivateNetworks: true
+    additionalRules: []
+  ingress:
+    allowSameRelease: true
+    allowFrom:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: apps
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: my-client

@@ -1,0 +1,23 @@
+{{- if .Values.rabbitmq.enabled }}
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "rabbitmq") -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rabbitmq
+spec:
+  type: {{ .Values.service.rabbitmq.type }}
+  selector:
+    {{- include "firecrawl.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: rabbitmq
+  ports:
+    - name: amqp
+      port: {{ .Values.service.rabbitmq.port }}
+      targetPort: amqp
+    - name: management
+      port: {{ .Values.service.rabbitmq.managementPort }}
+      targetPort: management
+{{- end }}

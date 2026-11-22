@@ -1,0 +1,20 @@
+{{- if .Values.nuqPostgres.enabled }}
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "nuqPostgres") -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nuq-postgres
+spec:
+  type: {{ .Values.service.nuqPostgres.type }}
+  selector:
+    {{- include "firecrawl.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: nuq-postgres
+  ports:
+    - name: postgres
+      port: {{ .Values.service.nuqPostgres.port }}
+      targetPort: postgres
+{{- end }}

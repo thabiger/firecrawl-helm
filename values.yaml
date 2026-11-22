@@ -1,0 +1,266 @@
+nameOverride: ""
+fullnameOverride: ""
+
+# Name of an existing Secret containing the Firecrawl credentials.
+# When set, the chart does not create its own Secret and every workload reads
+# these keys from this Secret:
+#   POSTGRES_USER, POSTGRES_DB, POSTGRES_PASSWORD, SEARXNG_SECRET, BULL_AUTH_KEY
+existingSecret: ""
+
+# Credentials used only when existingSecret is empty. Empty values are
+# generated once and preserved across upgrades through the existing Secret.
+secret:
+  postgresUser: postgres
+  postgresDb: postgres
+  postgresPassword: ""
+  searxngSecret: ""
+  bullAuthKey: ""
+
+images:
+  api:
+    repository: ghcr.io/firecrawl/firecrawl
+    tag: "2.11.162"
+    digest: "sha256:1b223ef18d410f67615f32ccaa3dcedfc26af4286f096247bddca3b624545e63"
+    pullPolicy: IfNotPresent
+  playwright:
+    repository: ghcr.io/firecrawl/playwright-service
+    tag: ""
+    digest: "sha256:227ce3d8059173925a5a0697c63a1e947662cca934a609151651f578774edd5d"
+    pullPolicy: IfNotPresent
+  nuqPostgres:
+    repository: ghcr.io/firecrawl/nuq-postgres
+    tag: ""
+    digest: "sha256:d719b36160eac2fcbe16dc7e7360ddb9c82c40ea5da183d07bf4a755c6a0b2ae"
+    pullPolicy: IfNotPresent
+  redis:
+    repository: docker.io/library/redis
+    tag: "7-alpine"
+    digest: ""
+    pullPolicy: IfNotPresent
+  rabbitmq:
+    repository: docker.io/library/rabbitmq
+    tag: "3.13.7-management"
+    digest: ""
+    pullPolicy: IfNotPresent
+  searxng:
+    repository: docker.io/searxng/searxng
+    tag: "2026.11.21-c6ee3e9fd"
+    digest: "sha256:fc1d81d7e9d04d3c8b3e23c7162feddf5c3d6aecd32e67a56eaabcb8d8747f79"
+    pullPolicy: IfNotPresent
+  busybox:
+    repository: docker.io/library/busybox
+    tag: "1.36"
+    digest: ""
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Optional per-component name overrides. Empty means
+# "<fullname>-<component>" (for example "firecrawl-api").
+names:
+  api: ""
+  playwright: ""
+  searxng: ""
+  redis: ""
+  rabbitmq: ""
+  nuqPostgres: ""
+
+service:
+  api:
+    type: ClusterIP
+    port: 3002
+  playwright:
+    type: ClusterIP
+    port: 3000
+  searxng:
+    type: ClusterIP
+    port: 8080
+  redis:
+    type: ClusterIP
+    port: 6379
+  rabbitmq:
+    type: ClusterIP
+    port: 5672
+    managementPort: 15672
+  nuqPostgres:
+    type: ClusterIP
+    port: 5432
+
+api:
+  replicaCount: 1
+  terminationGracePeriodSeconds: 60
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 3Gi
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext: {}
+  containerSecurityContext: {}
+  extraEnv: []
+  extraEnvFrom: []
+
+playwright:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  shmSize: 1Gi
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  extraEnv: []
+
+searxng:
+  enabled: true
+  replicaCount: 1
+  # Leave empty to use files/searxng/settings.yml.
+  settings: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext: {}
+  containerSecurityContext: {}
+  extraEnv: []
+
+redis:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    fsGroup: 999
+  containerSecurityContext: {}
+
+rabbitmq:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext:
+    fsGroup: 999
+  containerSecurityContext:
+    runAsUser: 999
+    runAsGroup: 999
+
+nuqPostgres:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 4Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podSecurityContext: {}
+  containerSecurityContext: {}
+
+config:
+  workersPerQueue: 1
+  crawlConcurrentRequests: 1
+  maxConcurrentJobs: 1
+  browserPoolSize: 1
+  nuqWorkerCount: 1
+  nodeOptions: "--max-old-space-size=512"
+  loggingLevel: warn
+  blockMedia: true
+  allowLocalWebhooks: false
+  # Set these when the matching internal component is disabled, or to point
+  # Firecrawl at services outside this release.
+  redisUrl: ""
+  redisRateLimitUrl: ""
+  nuqRabbitmqUrl: ""
+  postgresHost: ""
+  postgresPort: ""
+  playwrightMicroserviceUrl: ""
+  searxngEndpoint: ""
+
+networkPolicy:
+  # NetworkPolicy is opt-in because DNS selectors and CNI behavior vary.
+  enabled: false
+  egress:
+    allowDns: true
+    allowSameRelease: true
+    allowInternet: true
+    denyPrivateNetworks: true
+    additionalRules: []
+  ingress:
+    allowSameRelease: true
+    # Each entry is a NetworkPolicy peer, for example:
+    # - podSelector:
+    #     matchLabels:
+    #       app.kubernetes.io/name: my-client
+    allowFrom: []
+
+commonLabels: {}
+podLabels: {}
+podAnnotations: {}

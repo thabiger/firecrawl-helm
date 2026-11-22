@@ -1,0 +1,21 @@
+# Run only the API and point it at services managed elsewhere.
+# The existing Secret must contain the POSTGRES_* keys.
+existingSecret: firecrawl-secrets
+redis:
+  enabled: false
+rabbitmq:
+  enabled: false
+nuqPostgres:
+  enabled: false
+playwright:
+  enabled: false
+searxng:
+  enabled: false
+config:
+  redisUrl: redis://redis.example.internal:6379
+  redisRateLimitUrl: redis://redis.example.internal:6379
+  nuqRabbitmqUrl: amqp://rabbitmq.example.internal:5672
+  postgresHost: postgres.example.internal
+  postgresPort: "5432"
+  playwrightMicroserviceUrl: http://playwright.example.internal:3000/scrape
+  searxngEndpoint: ""

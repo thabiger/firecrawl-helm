@@ -1,0 +1,73 @@
+{{- $apiName := include "firecrawl.componentName" (dict "ctx" . "component" "api") -}}
+{{- $playwrightName := include "firecrawl.componentName" (dict "ctx" . "component" "playwright") -}}
+{{- $searxngName := include "firecrawl.componentName" (dict "ctx" . "component" "searxng") -}}
+{{- $redisName := include "firecrawl.componentName" (dict "ctx" . "component" "redis") -}}
+{{- $rabbitmqName := include "firecrawl.componentName" (dict "ctx" . "component" "rabbitmq") -}}
+{{- $postgresName := include "firecrawl.componentName" (dict "ctx" . "component" "nuqPostgres") -}}
+{{- $redisUrl := .Values.config.redisUrl -}}
+{{- if not $redisUrl -}}
+{{- if .Values.redis.enabled -}}
+{{- $redisUrl = printf "redis://%s:%v" $redisName .Values.service.redis.port -}}
+{{- else -}}
+{{- fail "config.redisUrl is required when redis.enabled is false" -}}
+{{- end -}}
+{{- end -}}
+{{- $redisRateLimitUrl := .Values.config.redisRateLimitUrl | default $redisUrl -}}
+{{- $rabbitmqUrl := .Values.config.nuqRabbitmqUrl -}}
+{{- if not $rabbitmqUrl -}}
+{{- if .Values.rabbitmq.enabled -}}
+{{- $rabbitmqUrl = printf "amqp://%s:%v" $rabbitmqName .Values.service.rabbitmq.port -}}
+{{- else -}}
+{{- fail "config.nuqRabbitmqUrl is required when rabbitmq.enabled is false" -}}
+{{- end -}}
+{{- end -}}
+{{- $playwrightUrl := .Values.config.playwrightMicroserviceUrl -}}
+{{- if not $playwrightUrl -}}
+{{- if .Values.playwright.enabled -}}
+{{- $playwrightUrl = printf "http://%s:%v/scrape" $playwrightName .Values.service.playwright.port -}}
+{{- else -}}
+{{- fail "config.playwrightMicroserviceUrl is required when playwright.enabled is false" -}}
+{{- end -}}
+{{- end -}}
+{{- $postgresHost := .Values.config.postgresHost -}}
+{{- if not $postgresHost -}}
+{{- if .Values.nuqPostgres.enabled -}}
+{{- $postgresHost = $postgresName -}}
+{{- else -}}
+{{- fail "config.postgresHost is required when nuqPostgres.enabled is false" -}}
+{{- end -}}
+{{- end -}}
+{{- $postgresPort := .Values.config.postgresPort | default (printf "%v" .Values.service.nuqPostgres.port) -}}
+{{- $searxngEndpoint := .Values.config.searxngEndpoint -}}
+{{- if and (not $searxngEndpoint) .Values.searxng.enabled -}}
+{{- $searxngEndpoint = printf "http://%s:%v" $searxngName .Values.service.searxng.port -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $apiName }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+data:
+  HOST: "0.0.0.0"
+  PORT: {{ .Values.service.api.port | quote }}
+  ENV: local
+  USE_DB_AUTHENTICATION: "false"
+  REDIS_URL: {{ $redisUrl | quote }}
+  REDIS_RATE_LIMIT_URL: {{ $redisRateLimitUrl | quote }}
+  NUQ_RABBITMQ_URL: {{ $rabbitmqUrl | quote }}
+  PLAYWRIGHT_MICROSERVICE_URL: {{ $playwrightUrl | quote }}
+  POSTGRES_HOST: {{ $postgresHost | quote }}
+  POSTGRES_PORT: {{ $postgresPort | quote }}
+  NUM_WORKERS_PER_QUEUE: {{ .Values.config.workersPerQueue | quote }}
+  CRAWL_CONCURRENT_REQUESTS: {{ .Values.config.crawlConcurrentRequests | quote }}
+  MAX_CONCURRENT_JOBS: {{ .Values.config.maxConcurrentJobs | quote }}
+  BROWSER_POOL_SIZE: {{ .Values.config.browserPoolSize | quote }}
+  NUQ_WORKER_COUNT: {{ .Values.config.nuqWorkerCount | quote }}
+  NODE_OPTIONS: {{ .Values.config.nodeOptions | quote }}
+  SEARXNG_ENDPOINT: {{ $searxngEndpoint | quote }}
+  BLOCK_MEDIA: {{ .Values.config.blockMedia | quote }}
+  ALLOW_LOCAL_WEBHOOKS: {{ .Values.config.allowLocalWebhooks | quote }}
+  LOGGING_LEVEL: {{ .Values.config.loggingLevel | quote }}

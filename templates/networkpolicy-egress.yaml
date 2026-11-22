@@ -1,0 +1,61 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $egress := .Values.networkPolicy.egress -}}
+{{- $hasRules := or $egress.allowSameRelease $egress.allowDns $egress.allowInternet (gt (len ($egress.additionalRules | default list)) 0) -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "firecrawl.fullname" . }}-egress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "firecrawl.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  {{- if $hasRules }}
+  egress:
+    {{- if $egress.allowSameRelease }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "firecrawl.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if $egress.allowDns }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    {{- end }}
+    {{- if $egress.allowInternet }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            {{- if $egress.denyPrivateNetworks }}
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 100.64.0.0/10
+              - 169.254.169.254/32
+              - 169.254.0.0/16
+              - 224.0.0.0/4
+              - 255.255.255.255/32
+            {{- end }}
+    {{- end }}
+    {{- with $egress.additionalRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- else }}
+  egress: []
+  {{- end }}
+{{- end }}

@@ -1,0 +1,97 @@
+{{- if .Values.playwright.enabled }}
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "playwright") -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: playwright
+spec:
+  replicas: {{ .Values.playwright.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "firecrawl.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: playwright
+  template:
+    metadata:
+      labels:
+        {{- include "firecrawl.podLabels" . | nindent 8 }}
+        app.kubernetes.io/component: playwright
+        {{- with .Values.playwright.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.playwright.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.playwright.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: playwright
+          image: {{ include "firecrawl.image" .Values.images.playwright | quote }}
+          imagePullPolicy: {{ .Values.images.playwright.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.playwright.port }}
+          env:
+            - name: PORT
+              value: {{ .Values.service.playwright.port | quote }}
+            - name: MAX_CONCURRENT_PAGES
+              value: {{ .Values.config.crawlConcurrentRequests | quote }}
+            - name: BLOCK_MEDIA
+              value: {{ .Values.config.blockMedia | quote }}
+            - name: ALLOW_LOCAL_WEBHOOKS
+              value: {{ .Values.config.allowLocalWebhooks | quote }}
+            {{- with .Values.playwright.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.playwright.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.playwright.resources | nindent 12 }}
+          volumeMounts:
+            - name: dev-shm
+              mountPath: /dev/shm
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+      volumes:
+        - name: dev-shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.playwright.shmSize }}
+      {{- with .Values.playwright.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.playwright.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.playwright.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

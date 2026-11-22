@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "images",
+    "service",
+    "api",
+    "playwright",
+    "searxng",
+    "redis",
+    "rabbitmq",
+    "nuqPostgres",
+    "config",
+    "networkPolicy"
+  ],
+  "properties": {
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "existingSecret": { "type": "string" },
+    "secret": {
+      "type": "object",
+      "properties": {
+        "postgresUser": { "type": "string" },
+        "postgresDb": { "type": "string" },
+        "postgresPassword": { "type": "string" },
+        "searxngSecret": { "type": "string" },
+        "bullAuthKey": { "type": "string" }
+      }
+    },
+    "images": {
+      "type": "object",
+      "required": ["api", "playwright", "nuqPostgres", "redis", "rabbitmq", "searxng", "busybox"],
+      "properties": {
+        "api": { "$ref": "#/definitions/image" },
+        "playwright": { "$ref": "#/definitions/image" },
+        "nuqPostgres": { "$ref": "#/definitions/image" },
+        "redis": { "$ref": "#/definitions/image" },
+        "rabbitmq": { "$ref": "#/definitions/image" },
+        "searxng": { "$ref": "#/definitions/image" },
+        "busybox": { "$ref": "#/definitions/image" }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "names": {
+      "type": "object",
+      "properties": {
+        "api": { "type": "string" },
+        "playwright": { "type": "string" },
+        "searxng": { "type": "string" },
+        "redis": { "type": "string" },
+        "rabbitmq": { "type": "string" },
+        "nuqPostgres": { "type": "string" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "required": ["api", "playwright", "searxng", "redis", "rabbitmq", "nuqPostgres"],
+      "properties": {
+        "api": { "$ref": "#/definitions/service" },
+        "playwright": { "$ref": "#/definitions/service" },
+        "searxng": { "$ref": "#/definitions/service" },
+        "redis": { "$ref": "#/definitions/service" },
+        "rabbitmq": {
+          "allOf": [
+            { "$ref": "#/definitions/service" },
+            {
+              "type": "object",
+              "required": ["managementPort"],
+              "properties": {
+                "managementPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+              }
+            }
+          ]
+        },
+        "nuqPostgres": { "$ref": "#/definitions/service" }
+      }
+    },
+    "api": { "$ref": "#/definitions/workload" },
+    "playwright": { "$ref": "#/definitions/workload" },
+    "searxng": { "$ref": "#/definitions/workload" },
+    "redis": { "$ref": "#/definitions/statefulWorkload" },
+    "rabbitmq": { "$ref": "#/definitions/statefulWorkload" },
+    "nuqPostgres": { "$ref": "#/definitions/statefulWorkload" },
+    "config": {
+      "type": "object",
+      "properties": {
+        "workersPerQueue": { "type": "integer", "minimum": 1 },
+        "crawlConcurrentRequests": { "type": "integer", "minimum": 1 },
+        "maxConcurrentJobs": { "type": "integer", "minimum": 1 },
+        "browserPoolSize": { "type": "integer", "minimum": 1 },
+        "nuqWorkerCount": { "type": "integer", "minimum": 1 },
+        "nodeOptions": { "type": "string" },
+        "loggingLevel": { "type": "string" },
+        "blockMedia": { "type": "boolean" },
+        "allowLocalWebhooks": { "type": "boolean" },
+        "redisUrl": { "type": "string" },
+        "redisRateLimitUrl": { "type": "string" },
+        "nuqRabbitmqUrl": { "type": "string" },
+        "postgresHost": { "type": "string" },
+        "postgresPort": { "type": "string" },
+        "playwrightMicroserviceUrl": { "type": "string" },
+        "searxngEndpoint": { "type": "string" }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "required": ["enabled", "egress", "ingress"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "egress": {
+          "type": "object",
+          "properties": {
+            "allowDns": { "type": "boolean" },
+            "allowSameRelease": { "type": "boolean" },
+            "allowInternet": { "type": "boolean" },
+            "denyPrivateNetworks": { "type": "boolean" },
+            "additionalRules": { "type": "array" }
+          }
+        },
+        "ingress": {
+          "type": "object",
+          "properties": {
+            "allowSameRelease": { "type": "boolean" },
+            "allowFrom": { "type": "array" }
+          }
+        }
+      }
+    },
+    "commonLabels": { "type": "object" },
+    "podLabels": { "type": "object" },
+    "podAnnotations": { "type": "object" }
+  },
+  "definitions": {
+    "image": {
+      "type": "object",
+      "required": ["repository", "tag", "pullPolicy"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "digest": { "type": "string" },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "required": ["type", "port"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+        },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "requests": { "type": "object" },
+        "limits": { "type": "object" }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "required": ["enabled", "size", "storageClass", "accessModes"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "size": { "type": "string", "minLength": 1 },
+        "storageClass": { "type": "string" },
+        "accessModes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicaCount": { "type": "integer", "minimum": 1 },
+        "resources": { "$ref": "#/definitions/resources" },
+        "podAnnotations": { "type": "object" },
+        "podLabels": { "type": "object" },
+        "nodeSelector": { "type": "object" },
+        "tolerations": { "type": "array" },
+        "affinity": { "type": "object" },
+        "podSecurityContext": { "type": "object" },
+        "containerSecurityContext": { "type": "object" },
+        "extraEnv": { "type": "array" },
+        "extraEnvFrom": { "type": "array" }
+      }
+    },
+    "statefulWorkload": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "resources": { "$ref": "#/definitions/resources" },
+        "persistence": { "$ref": "#/definitions/persistence" },
+        "podAnnotations": { "type": "object" },
+        "podLabels": { "type": "object" },
+        "nodeSelector": { "type": "object" },
+        "tolerations": { "type": "array" },
+        "affinity": { "type": "object" },
+        "podSecurityContext": { "type": "object" },
+        "containerSecurityContext": { "type": "object" }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{{- if .Values.searxng.enabled }}
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "searxng") -}}
+{{- $settings := .Values.searxng.settings | default (.Files.Get "files/searxng/settings.yml") -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: searxng
+data:
+  settings.yml: |
+{{ $settings | indent 4 }}
+{{- end }}

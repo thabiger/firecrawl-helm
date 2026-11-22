@@ -1,0 +1,59 @@
+name: images
+
+on:
+  workflow_dispatch:
+    inputs:
+      firecrawl_version:
+        description: Firecrawl git tag
+        required: true
+        default: v2.11.162
+      image_tag:
+        description: Image tag to publish
+        required: true
+        default: "2.11.162"
+      platforms:
+        description: Build platforms
+        required: true
+        default: linux/amd64
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: |
+          git clone --branch "${{ inputs.firecrawl_version }}" --depth 1 \
+            https://github.com/firecrawl/firecrawl.git vendor/firecrawl
+          python3 scripts/patch-firecrawl.py
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: vendor/firecrawl/apps/api
+          file: vendor/firecrawl/apps/api/Dockerfile
+          platforms: ${{ inputs.platforms }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/firecrawl-api:${{ inputs.image_tag }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: vendor/firecrawl/apps/playwright-service-ts
+          file: vendor/firecrawl/apps/playwright-service-ts/Dockerfile
+          platforms: ${{ inputs.platforms }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/firecrawl-playwright:${{ inputs.image_tag }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: vendor/firecrawl/apps/nuq-postgres
+          file: vendor/firecrawl/apps/nuq-postgres/Dockerfile
+          platforms: ${{ inputs.platforms }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/firecrawl-nuq-postgres:${{ inputs.image_tag }}

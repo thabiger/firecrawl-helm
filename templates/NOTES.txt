@@ -1,0 +1,22 @@
+{{- $apiName := include "firecrawl.componentName" (dict "ctx" . "component" "api") -}}
+Firecrawl is installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+API service:
+  http://{{ $apiName }}:{{ .Values.service.api.port }}
+
+Check readiness from inside the cluster:
+  kubectl -n {{ .Release.Namespace }} run firecrawl-check --rm -it --restart=Never \
+    --image={{ include "firecrawl.image" .Values.images.busybox }} -- \
+    wget -qO- http://{{ $apiName }}:{{ .Values.service.api.port }}/v0/health/readiness
+
+Run one scrape:
+  kubectl -n {{ .Release.Namespace }} run firecrawl-scrape --rm -it --restart=Never \
+    --image={{ include "firecrawl.image" .Values.images.busybox }} -- \
+    wget -qO- --header="Content-Type: application/json" \
+    --post-data='{"url":"https://example.com","formats":["markdown"]}' \
+    http://{{ $apiName }}:{{ .Values.service.api.port }}/v2/scrape
+
+{{- if not .Values.networkPolicy.enabled }}
+NetworkPolicy is disabled. Enable networkPolicy.enabled and review the
+default egress and ingress rules before exposing this release.
+{{- end }}

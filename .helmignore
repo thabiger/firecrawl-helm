@@ -1,0 +1,17 @@
+.DS_Store
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+__pycache__/
+dist/
+tests/
+examples/
+vendor/
+ci/

@@ -1,0 +1,6 @@
+secret:
+  postgresUser: postgres
+  postgresDb: firecrawl
+  postgresPassword: test-postgres-password
+  searxngSecret: test-searxng-secret
+  bullAuthKey: test-bull-auth-key

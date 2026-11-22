@@ -1,0 +1,20 @@
+{{- if .Values.redis.enabled }}
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "redis") -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: {{ .Values.service.redis.type }}
+  selector:
+    {{- include "firecrawl.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+  ports:
+    - name: redis
+      port: {{ .Values.service.redis.port }}
+      targetPort: redis
+{{- end }}

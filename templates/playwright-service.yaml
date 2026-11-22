@@ -1,0 +1,20 @@
+{{- if .Values.playwright.enabled }}
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "playwright") -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: playwright
+spec:
+  type: {{ .Values.service.playwright.type }}
+  selector:
+    {{- include "firecrawl.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: playwright
+  ports:
+    - name: http
+      port: {{ .Values.service.playwright.port }}
+      targetPort: http
+{{- end }}

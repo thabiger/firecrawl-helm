@@ -1,0 +1,141 @@
+{{- $name := include "firecrawl.componentName" (dict "ctx" . "component" "api") -}}
+{{- $secretName := include "firecrawl.secretName" . -}}
+{{- $playwrightName := include "firecrawl.componentName" (dict "ctx" . "component" "playwright") -}}
+{{- $searxngName := include "firecrawl.componentName" (dict "ctx" . "component" "searxng") -}}
+{{- $redisName := include "firecrawl.componentName" (dict "ctx" . "component" "redis") -}}
+{{- $rabbitmqName := include "firecrawl.componentName" (dict "ctx" . "component" "rabbitmq") -}}
+{{- $postgresName := include "firecrawl.componentName" (dict "ctx" . "component" "nuqPostgres") -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "firecrawl.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "firecrawl.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "firecrawl.podLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+        {{- with .Values.api.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.api.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      {{- with .Values.api.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-deps
+          image: {{ include "firecrawl.image" .Values.images.busybox | quote }}
+          imagePullPolicy: {{ .Values.images.busybox.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              {{- if .Values.nuqPostgres.enabled }}
+              until nc -z {{ $postgresName }} {{ .Values.service.nuqPostgres.port }}; do sleep 2; done
+              {{- end }}
+              {{- if .Values.redis.enabled }}
+              until nc -z {{ $redisName }} {{ .Values.service.redis.port }}; do sleep 2; done
+              {{- end }}
+              {{- if .Values.rabbitmq.enabled }}
+              until nc -z {{ $rabbitmqName }} {{ .Values.service.rabbitmq.port }}; do sleep 2; done
+              {{- end }}
+              {{- if .Values.searxng.enabled }}
+              until nc -z {{ $searxngName }} {{ .Values.service.searxng.port }}; do sleep 2; done
+              {{- end }}
+              {{- if .Values.playwright.enabled }}
+              until nc -z {{ $playwrightName }} {{ .Values.service.playwright.port }}; do sleep 2; done
+              {{- end }}
+              true
+      containers:
+        - name: api
+          image: {{ include "firecrawl.image" .Values.images.api | quote }}
+          imagePullPolicy: {{ .Values.images.api.pullPolicy }}
+          command:
+            - node
+            - dist/src/harness.js
+            - --start-docker
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.api.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ $name }}-config
+            {{- with .Values.api.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: POSTGRES_DB
+            - name: BULL_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: BULL_AUTH_KEY
+            {{- with .Values.api.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.api.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /v0/health/readiness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /v0/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
